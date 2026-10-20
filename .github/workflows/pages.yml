@@ -14,6 +14,9 @@ concurrency: { group: pages, cancel-in-progress: true }
 
 jobs:
   deploy:
+    # Off by default: Pages needs to be enabled in the repo (and a paid plan for private repos).
+    # Turn on with the repository variable PAGES_ENABLED = true.
+    if: vars.PAGES_ENABLED == 'true'
     runs-on: ubuntu-latest
     environment: { name: github-pages, url: "${{ steps.deployment.outputs.page_url }}" }
     steps:
