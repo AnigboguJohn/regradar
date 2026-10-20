@@ -1,0 +1,24 @@
+region            = "eu-west-1"
+env               = "prod"
+anthropic_api_key = "sk-ant-..."   # or leave "" for free extractive mode
+monitor_every_hours = 3
+
+# Optional email alerts via Amazon SES SMTP (or any SMTP provider)
+# smtp_host = "email-smtp.eu-west-1.amazonaws.com"
+# smtp_user = "AKIA..."
+# smtp_pass = "..."
+# mail_from = "RegRadar <alerts@yourdomain.com>"
+
+# Free AI answers instead of Claude (optional): "gemini" or "groq" + a key from their console
+# llm_provider = "gemini"
+# llm_api_key  = "AIza..."
+
+# reCAPTCHA v2 checkbox keys (add your app's domain to the key at google.com/recaptcha/admin)
+# recaptcha_site_key   = "6L..."
+# recaptcha_secret_key = "6L..."
+
+# Gmail instead of SES: smtp_host = "smtp.gmail.com", smtp_port = 587, smtp_user = "you@gmail.com",
+# smtp_pass = "<16-letter app password>", mail_from = "RegRadar <you@gmail.com>"
+
+# Where AWS alarms and the app's own alerts are emailed (confirm the AWS subscription email once)
+# alert_email = "you@company.com"

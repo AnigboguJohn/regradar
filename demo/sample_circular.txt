@@ -1,0 +1,17 @@
+SAMPLE CIRCULAR (DEMO DATA, NOT A REAL REGULATION)
+Ref: DEMO/KYC/2026/001
+
+1. Introduction
+This sample circular revises the tiered Know Your Customer (KYC) requirements for all deposit-taking institutions and payment service banks.
+
+2. Tier 1 Accounts
+Tier 1 accounts shall have a maximum single deposit of N50,000 and a maximum cumulative balance of N300,000. Tier 1 accounts may be opened without a Bank Verification Number (BVN) but must be linked to a verified phone number.
+
+3. Tier 2 Accounts
+Tier 2 accounts shall have a maximum single deposit of N100,000 and a maximum cumulative balance of N500,000. A BVN or National Identification Number (NIN) is mandatory.
+
+4. Record Keeping
+Institutions shall retain customer identification records for a minimum of ten (10) years after the end of the business relationship.
+
+5. Effective Date
+All institutions shall comply with this circular not later than 31 March 2027. Non-compliance shall attract sanctions.

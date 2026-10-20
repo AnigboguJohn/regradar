@@ -1,0 +1,13 @@
+{
+  "name": "regradar-browser-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.10.1",
+    "@playwright/test": "1.48.2"
+  }
+}

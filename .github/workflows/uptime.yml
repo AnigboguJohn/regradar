@@ -1,0 +1,33 @@
+name: Uptime check
+
+# A free outside check: every 10 minutes GitHub calls the live site's health endpoint.
+# If it fails, this run fails and GitHub emails the repository owner (Settings → Notifications
+# → Actions → "Send notifications for failed workflows only").
+#
+# Turn it on: GitHub → Settings → Secrets and variables → Actions → Variables → add
+#   APP_URL = https://your-app-address   (no trailing slash)
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    if: vars.APP_URL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Site answers and its database + AI service are healthy
+        run: |
+          for attempt in 1 2 3; do
+            code=$(curl -s -o body.json -w '%{http_code}' --max-time 20 "${{ vars.APP_URL }}/api/health/ready" || echo 000)
+            echo "attempt $attempt: HTTP $code $(cat body.json 2>/dev/null)"
+            [ "$code" = "200" ] && exit 0
+            sleep 20
+          done
+          echo "::error::${{ vars.APP_URL }} is down or degraded (HTTP $code)"
+          exit 1
+      - name: Web app loads
+        run: |
+          curl -sf --max-time 20 "${{ vars.APP_URL }}/" | grep -q '<div id="root">' \
+            || { echo "::error::The web app page did not load"; exit 1; }

@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Soft lavender backdrop behind the floating panels. */
+  body {
+    background-color: #ece9f5;
+    background-image:
+      radial-gradient(60rem 40rem at 10% -10%, #f6f3ff 0%, transparent 60%),
+      radial-gradient(50rem 35rem at 100% 110%, #ddd5f3 0%, transparent 60%),
+      radial-gradient(40rem 30rem at 85% 10%, #e6e0f7 0%, transparent 55%);
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  .card { @apply rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]; }
+  .panel { @apply rounded-[20px] border border-white/70 bg-white shadow-[0_1px_3px_rgba(76,29,149,0.06),0_8px_24px_-12px_rgba(76,29,149,0.12)]; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed; }
+  .btn-primary { @apply btn bg-slate-900 text-white hover:bg-slate-800; }
+  .btn-ghost { @apply btn border border-slate-200 bg-white text-slate-700 hover:bg-slate-50; }
+  .input { @apply w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100; }
+  .file-input { @apply text-sm text-slate-600 file:mr-3 file:cursor-pointer file:rounded-lg file:border file:border-solid file:border-slate-200 file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-50; }
+  .label { @apply mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500; }
+  .h1 { @apply text-2xl font-semibold tracking-tight text-slate-900; }
+
+  /* Remi's avatar: a glowing lavender orb. */
+  .orb {
+    @apply rounded-full;
+    background:
+      radial-gradient(circle at 32% 28%, #ffffff 0%, rgba(255,255,255,0) 32%),
+      radial-gradient(circle at 70% 75%, #8b5cf6 0%, rgba(139,92,246,0) 55%),
+      radial-gradient(circle at 50% 50%, #c4b5fd 0%, #a78bfa 60%, #8b5cf6 100%);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.6) inset, 0 10px 40px -6px rgba(139,92,246,0.55);
+  }
+  .orb-glow { @apply orb; animation: orb-float 6s ease-in-out infinite; }
+  .greeting { @apply bg-gradient-to-r from-brand-300 via-brand-400 to-brand-500 bg-clip-text text-transparent; }
+}
+
+@keyframes orb-float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-6px) scale(1.03); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .orb-glow { animation: none; }
+}

@@ -1,0 +1,47 @@
+# Run the whole stack locally:  cp .env.example .env  &&  docker compose up --build
+# Then open http://localhost:8080
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: regradar
+      POSTGRES_PASSWORD: regradar
+      POSTGRES_DB: regradar
+    volumes: [pgdata:/var/lib/postgresql/data]
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U regradar"]
+      interval: 5s
+      retries: 20
+
+  ai:
+    build: ./services/ai
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://regradar:regradar@db:5432/regradar
+    depends_on:
+      db: { condition: service_healthy }
+      api: { condition: service_started }   # api runs the migrations
+
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://regradar:regradar@db:5432/regradar
+      AI_SERVICE_URL: http://ai:8000
+      CORS_ORIGINS: http://localhost:8080
+      APP_URL: http://localhost:8080
+      CRON_INTERVAL_MINUTES: ${CRON_INTERVAL_MINUTES:-180}
+    depends_on:
+      db: { condition: service_healthy }
+    ports: ["4000:4000"]
+
+  web:
+    build: ./apps/web
+    depends_on: [api]
+    ports: ["8080:80"]
+
+volumes:
+  pgdata:

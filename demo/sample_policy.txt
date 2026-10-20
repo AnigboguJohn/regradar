@@ -1,0 +1,13 @@
+Customer Onboarding and KYC Policy (Demo Bank, v2.1)
+
+1. Purpose
+This policy sets out how Demo Bank verifies customers before opening accounts.
+
+2. Account Tiers
+Tier 1 savings accounts may receive single deposits of up to N100,000 and hold a maximum cumulative balance of N500,000. A BVN is not required for Tier 1.
+
+3. Tier 2 Accounts
+Tier 2 accounts require a BVN and allow a maximum cumulative balance of N500,000.
+
+4. Record Retention
+Customer identification records are retained for five (5) years after the account is closed.

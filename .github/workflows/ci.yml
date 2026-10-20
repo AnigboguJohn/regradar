@@ -1,0 +1,119 @@
+name: CI / Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env: { POSTGRES_USER: regradar, POSTGRES_PASSWORD: regradar, POSTGRES_DB: regradar }
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U regradar" --health-interval 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: AI service tests
+        working-directory: services/ai
+        run: |
+          pip install -r requirements.txt
+          python -m pytest -q
+
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - name: Create the test database
+        run: |
+          psql postgresql://regradar:regradar@localhost:5432/regradar -c "CREATE DATABASE regradar_test"
+          psql postgresql://regradar:regradar@localhost:5432/regradar_test -c "CREATE EXTENSION IF NOT EXISTS vector"
+      - name: API typecheck + unit and integration tests
+        working-directory: services/api
+        env:
+          TEST_DATABASE_URL: postgresql://regradar:regradar@localhost:5432/regradar_test
+        run: |
+          npm install
+          npm run typecheck
+          npm test
+      - name: Migrations apply cleanly (all of them, in order)
+        run: |
+          for f in db/migrations/*.sql; do   # the shell lists these in name order: 001, 002, ...
+            echo "applying $f"
+            psql postgresql://regradar:regradar@localhost:5432/regradar -v ON_ERROR_STOP=1 -q -f "$f"
+          done
+      - name: Web build
+        working-directory: apps/web
+        run: |
+          npm install
+          npm run build
+
+  # Real browser tests against a throwaway copy of the whole stack (docker-compose.test.yml).
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - name: Start the test stack
+        run: docker compose -p regradar-test -f docker-compose.test.yml up -d --build --wait
+      - name: Install Playwright
+        working-directory: tests/browser
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Browser tests
+        working-directory: tests/browser
+        env:
+          COMPOSE: docker compose -p regradar-test -f docker-compose.test.yml
+        run: npx playwright test
+      - name: Test report (screenshots and videos of failures)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: tests/browser/playwright-report
+          retention-days: 14
+      - name: Logs from the test stack
+        if: failure()
+        run: docker compose -p regradar-test -f docker-compose.test.yml logs --no-color api ai | tail -200
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
+    needs: [test, browser]
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      NAME: regradar-prod
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build & push images
+        run: |
+          REG="${{ steps.ecr.outputs.registry }}"
+          docker build -t "$REG/$NAME-api:latest" -t "$REG/$NAME-api:${{ github.sha }}" -f services/api/Dockerfile .
+          docker build -t "$REG/$NAME-ai:latest"  -t "$REG/$NAME-ai:${{ github.sha }}" services/ai
+          docker push --all-tags "$REG/$NAME-api"
+          docker push --all-tags "$REG/$NAME-ai"
+      - name: Roll ECS services
+        run: |
+          aws ecs update-service --cluster "$NAME" --service ai  --force-new-deployment > /dev/null
+          aws ecs update-service --cluster "$NAME" --service api --force-new-deployment > /dev/null
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - name: Build & upload web app
+        working-directory: apps/web
+        run: |
+          npm install && npm run build
+          aws s3 sync dist s3://${{ vars.WEB_BUCKET }} --delete
+          aws cloudfront create-invalidation --distribution-id ${{ vars.CLOUDFRONT_ID }} --paths "/*" > /dev/null

@@ -1,0 +1,57 @@
+# A throwaway copy of RegRadar for the browser tests (tests/browser). It is completely separate
+# from your normal stack: own project name, empty in-memory database, web on port 8090, and no
+# reCAPTCHA or email (so automated tests can sign up and nothing is ever emailed).
+#
+#   ./scripts/e2e.sh          builds it, runs the browser tests, then removes it
+#
+# Or by hand:
+#   docker compose -p regradar-test -f docker-compose.test.yml up -d --build
+#   docker compose -p regradar-test -f docker-compose.test.yml down -v
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: regradar
+      POSTGRES_PASSWORD: regradar
+      POSTGRES_DB: regradar
+    tmpfs: [/var/lib/postgresql/data]   # wiped every time the stack stops
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U regradar"]
+      interval: 3s
+      retries: 30
+
+  ai:
+    build: ./services/ai
+    environment:
+      DATABASE_URL: postgresql://regradar:regradar@db:5432/regradar
+      INTERNAL_TOKEN: e2e-internal-token
+    depends_on:
+      db: { condition: service_healthy }
+      api: { condition: service_started }
+
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://regradar:regradar@db:5432/regradar
+      AI_SERVICE_URL: http://ai:8000
+      INTERNAL_TOKEN: e2e-internal-token
+      JWT_SECRET: e2e-only-secret-not-for-production
+      CORS_ORIGINS: http://localhost:8090
+      APP_URL: http://localhost:8090
+      CRON_INTERVAL_MINUTES: "0"
+      OPS_MONITOR_MINUTES: "0"
+      RECAPTCHA_SITE_KEY: ""
+      RECAPTCHA_SECRET_KEY: ""
+      SMTP_HOST: ""
+      # The tests sign up and sign in many times from one address; real installs keep 20 and 10.
+      AUTH_RATE_LIMIT: "1000"
+      RESET_RATE_LIMIT: "1000"
+    depends_on:
+      db: { condition: service_healthy }
+
+  web:
+    build: ./apps/web
+    depends_on: [api]
+    ports: ["8090:80"]

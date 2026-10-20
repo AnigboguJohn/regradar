@@ -1,0 +1,12 @@
+# Store text files with Unix line endings (shell scripts must have them to run on Linux, CI and AWS).
+* text=auto eol=lf
+
+# Never touch binary files.
+*.pdf  binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.ico  binary
+*.webp binary
+*.zip  binary
+*.docx binary

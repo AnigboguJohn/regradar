@@ -1,0 +1,17 @@
+node_modules/
+dist/
+__pycache__/
+*.pyc
+.env
+.venv/
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+.DS_Store
+dist-demo/
+
+# Browser test output
+tests/browser/node_modules/
+tests/browser/playwright-report/
+tests/browser/test-results/
