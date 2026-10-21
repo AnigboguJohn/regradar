@@ -15,8 +15,12 @@ pg.types.setTypeParser(1082, (v) => v);
 export const pool = new pg.Pool({
   connectionString: config.databaseUrl,
   max: 10,
+  idleTimeoutMillis: 30_000,
   ssl: process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : undefined,
 });
+// Hosted databases (Neon, RDS failover) close idle connections. Without this handler Node treats
+// that as an unhandled error and the whole server crashes; the pool simply opens a new connection.
+pool.on("error", (err) => logger.warn({ err: err.message }, "idle database connection closed; it will be replaced"));
 
 export async function query<T extends pg.QueryResultRow = any>(sql: string, params: unknown[] = []) {
   const res = await pool.query<T>(sql, params);

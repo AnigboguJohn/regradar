@@ -1,0 +1,45 @@
+# RegRadar in ONE container, for free single-service hosts such as Render:
+# the website, the Node.js API and Remi's Python AI service, behind one address.
+# The database is external (e.g. Neon). Local development keeps using docker-compose.yml.
+
+# ---- 1. Build the website ----
+FROM node:22-bookworm-slim AS web
+WORKDIR /w
+COPY apps/web/package*.json ./
+RUN npm ci
+COPY apps/web/ ./
+RUN npm run build
+
+# ---- 2. Build the API ----
+FROM node:22-bookworm-slim AS api
+WORKDIR /a
+COPY services/api/package*.json ./
+RUN npm ci
+COPY services/api/tsconfig.json ./
+COPY services/api/src ./src
+RUN npm run build && npm prune --omit=dev
+
+# ---- 3. Runtime: Python (AI service) + the Node binary (API) ----
+FROM python:3.12-slim-bookworm
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 NODE_ENV=production \
+    MIGRATIONS_DIR=/srv/migrations WEB_DIST=/srv/web AI_SERVICE_URL=http://127.0.0.1:8000 PORT=10000
+COPY --from=api /usr/local/bin/node /usr/local/bin/node
+
+WORKDIR /srv/ai
+COPY services/ai/requirements.txt .
+RUN grep -v '^pytest' requirements.txt > runtime.txt && pip install --no-cache-dir -r runtime.txt && rm runtime.txt
+COPY services/ai/app ./app
+
+WORKDIR /srv/api
+COPY --from=api /a/node_modules ./node_modules
+COPY --from=api /a/dist ./dist
+COPY services/api/package.json ./
+COPY services/api/assets ./assets
+COPY db/migrations /srv/migrations
+COPY --from=web /w/dist /srv/web
+COPY deploy/render/start.sh /srv/start.sh
+
+RUN useradd -r -u 10001 app && chmod 755 /srv/start.sh
+USER app
+EXPOSE 10000
+CMD ["/srv/start.sh"]

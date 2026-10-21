@@ -13,7 +13,7 @@ The first source is the **Central Bank of Nigeria (CBN)** circulars feed. Adding
 
 ---
 
-New to the code? Start with the [code tour](docs/CODE_TOUR.md). Running the service? See the [admin console guide](docs/ADMIN.md) (`/admin`) and [monitoring and testing](docs/MONITORING_AND_TESTING.md).
+New to the code? Start with the [code tour](docs/CODE_TOUR.md). **Free live link:** [deploy on Render](docs/DEPLOY_RENDER.md) (website, API and Remi in one free service). Running the service? See the [admin console guide](docs/ADMIN.md) (`/admin`) and [monitoring and testing](docs/MONITORING_AND_TESTING.md).
 
 ## Architecture
 

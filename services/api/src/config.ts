@@ -22,8 +22,13 @@ export const config = {
   internalToken: env("INTERNAL_TOKEN", "dev-internal-token"),
   cronSecret: env("CRON_SECRET", "dev-cron-secret"),
   cronIntervalMinutes: Number(env("CRON_INTERVAL_MINUTES", "0")), // 0 = rely on external scheduler (EventBridge)
-  corsOrigins: env("CORS_ORIGINS", "http://localhost:5173").split(",").map((s) => s.trim()),
-  appUrl: env("APP_URL", "http://localhost:5173"),
+  // Render sets RENDER_EXTERNAL_URL (e.g. https://regradar.onrender.com) automatically.
+  corsOrigins: env("CORS_ORIGINS", process.env.RENDER_EXTERNAL_URL ?? "http://localhost:5173").split(",").map((s) => s.trim()),
+  appUrl: env("APP_URL", process.env.RENDER_EXTERNAL_URL ?? "http://localhost:5173"),
+  // Folder with the built web app; set when the API also serves the website (Render).
+  webDist: process.env.WEB_DIST ?? "",
+  // Email over HTTPS via Brevo, for hosts that block SMTP ports (Render's free plan does).
+  brevoApiKey: process.env.BREVO_API_KEY ?? "",
   smtp: {
     host: process.env.SMTP_HOST ?? "",
     port: Number(process.env.SMTP_PORT ?? "587"),

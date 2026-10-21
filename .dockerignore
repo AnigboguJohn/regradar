@@ -1,0 +1,16 @@
+# Never send these into Docker builds that use the repository root as context
+# (Dockerfile.render, services/api/Dockerfile, docker-compose*.yml).
+**/node_modules
+**/dist
+**/dist-demo
+**/__pycache__
+**/*.pyc
+.git
+.env
+.env.*
+!.env.example
+**/.terraform
+**/*.tfstate*
+infra/terraform/terraform.tfvars
+tests/browser/playwright-report
+tests/browser/test-results

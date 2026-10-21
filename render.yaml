@@ -1,0 +1,44 @@
+# Render Blueprint: one free web service running the whole of RegRadar from Dockerfile.render.
+# Render → New → Blueprint → pick this repository; it asks for the values marked "sync: false".
+# Step-by-step guide: docs/DEPLOY_RENDER.md
+services:
+  - type: web
+    name: regradar
+    runtime: docker
+    plan: free
+    region: frankfurt         # closest free region to Nigeria; create the Neon database in Frankfurt too
+    dockerfilePath: ./Dockerfile.render
+    dockerContext: .
+    healthCheckPath: /healthz
+    autoDeploy: true          # every push to main redeploys, like Vercel/Netlify
+    envVars:
+      # Database: the connection string from Neon (free Postgres with pgvector)
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_SSL
+        value: "true"
+      # Secrets Render generates once and keeps
+      - key: JWT_SECRET
+        generateValue: true
+      - key: INTERNAL_TOKEN
+        generateValue: true
+      - key: CRON_SECRET
+        generateValue: true
+      # Email through Brevo's HTTPS API (Render's free plan blocks Gmail's SMTP ports)
+      - key: BREVO_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        sync: false            # e.g. RegRadar <you@gmail.com> (must be a verified Brevo sender)
+      # Google reCAPTCHA v2 keys (add your onrender.com address to the key's domains)
+      - key: RECAPTCHA_SITE_KEY
+        sync: false
+      - key: RECAPTCHA_SECRET_KEY
+        sync: false
+      # Optional: free AI written answers (gemini or groq) — leave empty to skip
+      - key: LLM_PROVIDER
+        sync: false
+      - key: LLM_API_KEY
+        sync: false
+      # Check regulators every 3 hours while the service is awake
+      - key: CRON_INTERVAL_MINUTES
+        value: "180"

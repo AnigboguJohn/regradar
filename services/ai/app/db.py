@@ -10,7 +10,10 @@ from psycopg_pool import ConnectionPool
 
 from .config import settings
 
-pool = ConnectionPool(settings.database_url, min_size=1, max_size=10, open=False,
+# check_connection tests each connection before handing it out, so a connection the database
+# closed while idle (Neon pauses after 5 minutes) is replaced instead of failing the request.
+pool = ConnectionPool(settings.database_url, min_size=1, max_size=10, open=False, max_idle=120,
+                      check=ConnectionPool.check_connection,
                       kwargs={"row_factory": dict_row, "autocommit": False})
 
 

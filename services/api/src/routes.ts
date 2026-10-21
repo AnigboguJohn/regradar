@@ -21,7 +21,7 @@ import { config } from "./config.js";
 import { one, query, tx } from "./db.js";
 import { runMonitoringCycle } from "./jobs.js";
 import { logger } from "./logger.js";
-import { sendMail } from "./mailer.js";
+import { emailEnabled, sendMail } from "./mailer.js";
 import {
   codeMatches, FORGOT_MESSAGE, hashInviteToken, INVITE_DAYS, issueResetCode, MAX_ATTEMPTS, newInviteToken,
   NO_ACCOUNT, RESEND_SECONDS, resetEmail,
@@ -653,7 +653,7 @@ async function sendInvite(req: Request, email: string, role: "admin" | "member")
   catch (e) { emailSent = false; logger.error({ err: (e as Error).message }, "invite email failed"); }
   audit(req, "invite_sent", { email, role, emailSent });
   // The link is returned once so the admin can also share it another way (e.g. WhatsApp).
-  return { invite: { ...invite, invited_by_name: req.user!.name }, link, emailSent: emailSent && !!config.smtp.host };
+  return { invite: { ...invite, invited_by_name: req.user!.name }, link, emailSent: emailSent && emailEnabled() };
 }
 
 const InviteIn = z.object({ email: Email, role: z.enum(["admin", "member"]).default("member") });

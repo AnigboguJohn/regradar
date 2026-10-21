@@ -19,7 +19,7 @@ import { captchaProblem } from "./captcha.js";
 import { config } from "./config.js";
 import { one, pool, query } from "./db.js";
 import { runMonitoringCycle } from "./jobs.js";
-import { checkSmtp } from "./mailer.js";
+import { checkSmtp, emailEnabled } from "./mailer.js";
 import { runAlertMonitor, sendTestAlert } from "./ops.js";
 import { issueResetCode } from "./passwordReset.js";
 import { decryptSecret, encryptSecret, newTotpSecret, otpauthUrl, verifyTotp } from "./totp.js";
@@ -247,7 +247,7 @@ adminRouter.patch("/users/:id", wrap(async (req, res) => {
 adminRouter.post("/users/:id/reset-password", wrap(async (req, res) => {
   const u = await ownUser(req.params.id);
   if (!u) return res.status(404).json({ error: "User not found" });
-  if (!config.smtp.host) return res.status(400).json({ error: "Email isn't set up (SMTP), so a reset code can't be sent." });
+  if (!emailEnabled()) return res.status(400).json({ error: "Email isn't set up (Brevo or SMTP), so a reset code can't be sent." });
   await issueResetCode(u);
   adminAudit(req, "user_reset_sent", { userId: u.id, email: u.email });
   res.json({ ok: true, message: `A reset code was emailed to ${u.email}. It expires in 5 minutes.` });
@@ -356,7 +356,7 @@ adminRouter.get("/health", wrap(async (_req, res) => {
     api: { ok: true, uptimeSeconds: Math.round(process.uptime()), node: process.version, memoryMb: Math.round(process.memoryUsage().rss / 1048576), environment: config.isProd ? "production" : "development", appUrl: config.appUrl },
     database: { ok: !!db, ms: dbMs, size: db?.size, version: db?.version?.split(" ").slice(0, 2).join(" "), pool: { total: pool.totalCount, idle: pool.idleCount } },
     ai: { ok: !!aiHealth?.ok, ms: aiMs, ...aiHealth },
-    email: { ...smtp, host: config.smtp.host || null, from: config.smtp.from },
+    email: { ...smtp, host: smtp.via === "brevo" ? "Brevo (HTTPS API)" : config.smtp.host || null, from: config.smtp.from },
     recaptcha: { enabled: !!config.recaptcha.secretKey, testKeys: config.recaptcha.siteKey === GOOGLE_TEST_SITE_KEY },
     sync: { lastRun, scheduledEveryMinutes: config.cronIntervalMinutes || null },
     security: { failedAdminSignIns24h: errors24h.n },
@@ -403,7 +403,7 @@ adminRouter.post("/alerts/check", wrap(async (req, res) => {
 }));
 
 adminRouter.post("/alerts/test", wrap(async (req, res) => {
-  if (!config.smtp.host) return res.status(400).json({ error: "Email isn't set up (SMTP), so alerts can't be emailed." });
+  if (!emailEnabled()) return res.status(400).json({ error: "Email isn't set up (Brevo or SMTP), so alerts can't be emailed." });
   const to = await sendTestAlert();
   adminAudit(req, "alerts_test", { to });
   res.json({ ok: true, message: `Test alert sent to ${to.join(", ")}.` });
